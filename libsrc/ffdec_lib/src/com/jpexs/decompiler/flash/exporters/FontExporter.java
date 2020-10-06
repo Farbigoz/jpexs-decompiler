@@ -12,7 +12,8 @@
  * Lesser General Public License for more details.
  * 
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library. */
+ * License along with this library.
+ */
 package com.jpexs.decompiler.flash.exporters;
 
 import com.google.typography.font.sfntly.Font;
@@ -26,6 +27,7 @@ import com.jpexs.decompiler.flash.ReadOnlyTagList;
 import com.jpexs.decompiler.flash.RetryTask;
 import com.jpexs.decompiler.flash.SWF;
 import com.jpexs.decompiler.flash.SWFInputStream;
+import com.jpexs.decompiler.flash.action.parser.ActionParseException;
 import com.jpexs.decompiler.flash.configuration.Configuration;
 import com.jpexs.decompiler.flash.exporters.modes.FontExportMode;
 import com.jpexs.decompiler.flash.exporters.settings.FontExportSettings;
@@ -88,10 +90,24 @@ public class FontExporter {
                 if (settings.mode == FontExportMode.WOFF) {
                     ext = ".woff";
                 }
+                if (settings.mode == FontExportMode.SWF) {
+                    ext = ".swf";
+                }
+                
                 final File file = new File(outdir + File.separator + Helper.makeFileName(st.getCharacterExportFileName() + ext));
-                new RetryTask(() -> {
-                    exportFont(st, settings.mode, file);
-                }, handler).run();
+                
+                if (settings.mode == FontExportMode.SWF) {
+                    OutputStream fos = new BufferedOutputStream(new FileOutputStream(file));
+                    try {
+                        new PreviewExporter().exportSwf(fos, st, null, 0, true);
+                    } catch (ActionParseException ex) {
+                        Logger.getLogger(FontExporter.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                } else {
+                    new RetryTask(() -> {
+                        exportFont(st, settings.mode, file);
+                    }, handler).run();
+                }
 
                 ret.add(file);
 

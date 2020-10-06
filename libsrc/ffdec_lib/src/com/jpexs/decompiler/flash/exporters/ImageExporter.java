@@ -12,13 +12,15 @@
  * Lesser General Public License for more details.
  * 
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library. */
+ * License along with this library.
+ */
 package com.jpexs.decompiler.flash.exporters;
 
 import com.jpexs.decompiler.flash.AbortRetryIgnoreHandler;
 import com.jpexs.decompiler.flash.EventListener;
 import com.jpexs.decompiler.flash.ReadOnlyTagList;
 import com.jpexs.decompiler.flash.RetryTask;
+import com.jpexs.decompiler.flash.action.parser.ActionParseException;
 import com.jpexs.decompiler.flash.exporters.modes.ImageExportMode;
 import com.jpexs.decompiler.flash.exporters.settings.ImageExportSettings;
 import com.jpexs.decompiler.flash.helpers.BMPFile;
@@ -35,6 +37,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -73,20 +77,31 @@ public class ImageExporter {
 
                 ImageFormat fileFormat = imageTag.getImageFormat();
                 ImageFormat originalFormat = fileFormat;
+                
                 if (settings.mode == ImageExportMode.PNG) {
                     fileFormat = ImageFormat.PNG;
                 }
-
                 if (settings.mode == ImageExportMode.JPEG) {
                     fileFormat = ImageFormat.JPEG;
                 }
-
                 if (settings.mode == ImageExportMode.BMP) {
                     fileFormat = ImageFormat.BMP;
                 }
-
-                {
-                    final File file = new File(outdir + File.separator + Helper.makeFileName(imageTag.getCharacterExportFileName() + "." + ImageHelper.getImageFormatString(fileFormat)));
+                if (settings.mode == ImageExportMode.SWF) {
+                    fileFormat = ImageFormat.SWF;
+                }
+                
+                File file = new File(outdir + File.separator + Helper.makeFileName(imageTag.getCharacterExportFileName() + "." + ImageHelper.getImageFormatString(fileFormat)));
+                
+                if (settings.mode == ImageExportMode.SWF) {
+                    OutputStream fos = new BufferedOutputStream(new FileOutputStream(file));
+                    try {
+                        new PreviewExporter().exportSwf(fos, imageTag, null, 0, true);
+                    } catch (ActionParseException ex) {
+                        Logger.getLogger(ImageExporter.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                    
+                } else {
                     final ImageFormat ffileFormat = fileFormat;
 
                     new RetryTask(() -> {
@@ -100,8 +115,9 @@ public class ImageExporter {
                             ImageHelper.write(imageTag.getImageCached().getBufferedImage(), ffileFormat, file);
                         }
                     }, handler).run();
-                    ret.add(file);
                 }
+                
+                ret.add(file);
 
                 if (evl != null) {
                     evl.handleExportedEvent("image", currentIndex, count, t.getName());

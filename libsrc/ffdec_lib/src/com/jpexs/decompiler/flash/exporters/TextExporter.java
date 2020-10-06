@@ -12,13 +12,15 @@
  * Lesser General Public License for more details.
  * 
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library. */
+ * License along with this library.
+ */
 package com.jpexs.decompiler.flash.exporters;
 
 import com.jpexs.decompiler.flash.AbortRetryIgnoreHandler;
 import com.jpexs.decompiler.flash.EventListener;
 import com.jpexs.decompiler.flash.ReadOnlyTagList;
 import com.jpexs.decompiler.flash.RetryTask;
+import com.jpexs.decompiler.flash.action.parser.ActionParseException;
 import com.jpexs.decompiler.flash.configuration.Configuration;
 import com.jpexs.decompiler.flash.exporters.commonshape.ExportRectangle;
 import com.jpexs.decompiler.flash.exporters.commonshape.SVGExporter;
@@ -37,10 +39,13 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author JPEXS
+ * @edited Farbigoz
  */
 public class TextExporter {
 
@@ -86,6 +91,33 @@ public class TextExporter {
                             fos.write(Utf8Helper.getBytes(exporter.getSVG()));
                         }
                     }, handler).run();
+                    ret.add(file);
+
+                    if (evl != null) {
+                        evl.handleExportedEvent("text", currentIndex, count, t.getName());
+                    }
+
+                    currentIndex++;
+                }
+            }
+            return ret;
+        }
+        
+        if (settings.mode == TextExportMode.SWF) {
+            for (Tag t : tags) {
+                if (t instanceof TextTag) {
+                    if (evl != null) {
+                        evl.handleExportingEvent("text", currentIndex, count, t.getName());
+                    }
+
+                    final TextTag textTag = (TextTag) t;
+                    final File file = new File(outdir + File.separator + Helper.makeFileName(textTag.getCharacterExportFileName() + ".swf"));
+                    OutputStream fos = new BufferedOutputStream(new FileOutputStream(file));
+                    try {
+                        new PreviewExporter().exportSwf(fos, textTag, null, 0);
+                    } catch (ActionParseException ex) {
+                        Logger.getLogger(MorphShapeExporter.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                     ret.add(file);
 
                     if (evl != null) {

@@ -12,7 +12,8 @@
  * Lesser General Public License for more details.
  * 
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library. */
+ * License along with this library.
+ */
 package com.jpexs.decompiler.flash.exporters;
 
 import com.jpexs.decompiler.flash.SWF;
@@ -86,6 +87,10 @@ public class PreviewExporter {
     public static final int MORPH_SHAPE_ANIMATION_FRAME_RATE = 30;
 
     public SWFHeader exportSwf(OutputStream os, TreeItem treeItem, Color backgroundColor, int fontPageNum) throws IOException, ActionParseException {
+        return exportSwf(os, treeItem, backgroundColor, fontPageNum, false);
+    }
+
+    public SWFHeader exportSwf(OutputStream os, TreeItem treeItem, Color backgroundColor, int fontPageNum, boolean exportToFile) throws IOException, ActionParseException {
         SWF swf = treeItem.getSwf();
 
         int frameCount = 1;
@@ -305,50 +310,52 @@ public class PreviewExporter {
                         textHeight--;
                     }
 
-                    MATRIX tmat = new MATRIX();
-                    for (int f = firstGlyphIndex; f < firstGlyphIndex + countGlyphs; f++) {
-                        if (x >= cols) {
-                            x = 0;
-                            y++;
+                    if (!exportToFile) {
+                        MATRIX tmat = new MATRIX();
+                        for (int f = firstGlyphIndex; f < firstGlyphIndex + countGlyphs; f++) {
+                            if (x >= cols) {
+                                x = 0;
+                                y++;
+                            }
+                            List<TEXTRECORD> rec = new ArrayList<>();
+                            TEXTRECORD tr = new TEXTRECORD();
+
+                            RECT b = shapes.get(f).getBounds();
+                            int xmin = b.Xmin == Integer.MAX_VALUE ? 0 : (int) (b.Xmin / ft.getDivider());
+                            xmin *= textHeight / 1024.0;
+                            int ymin = b.Ymin == Integer.MAX_VALUE ? 0 : (int) (b.Ymin / ft.getDivider());
+                            ymin *= textHeight / 1024.0;
+                            int w = (int) (b.getWidth() / ft.getDivider());
+                            w *= textHeight / 1024.0;
+                            int h = (int) (b.getHeight() / ft.getDivider());
+                            h *= textHeight / 1024.0;
+
+                            tr.fontId = fontId;
+                            tr.styleFlagsHasFont = true;
+                            tr.textHeight = textHeight;
+                            tr.xOffset = -xmin;
+                            tr.yOffset = 0;
+                            tr.styleFlagsHasXOffset = true;
+                            tr.styleFlagsHasYOffset = true;
+                            tr.glyphEntries = new ArrayList<>(1);
+                            tr.styleFlagsHasColor = true;
+                            tr.textColor = new RGB(0, 0, 0);
+                            GLYPHENTRY ge = new GLYPHENTRY();
+
+                            double ga = ft.getGlyphAdvance(f);
+                            int cw = ga == -1 ? w : (int) (ga / ft.getDivider() * textHeight / 1024.0);
+
+                            ge.glyphAdvance = 0;
+                            ge.glyphIndex = f;
+                            tr.glyphEntries.add(ge);
+                            rec.add(tr);
+
+                            tmat.translateX = x * width / cols + width / cols / 2 - w / 2;
+                            tmat.translateY = y * height / rows + height / rows / 2;
+                            new DefineTextTag(swf, 999 + f, new RECT(0, cw, ymin, ymin + h), new MATRIX(), rec).writeTag(sos2);
+                            new PlaceObject2Tag(swf, false, 1 + f, 999 + f, tmat, null, 0, null, -1, null).writeTag(sos2);
+                            x++;
                         }
-                        List<TEXTRECORD> rec = new ArrayList<>();
-                        TEXTRECORD tr = new TEXTRECORD();
-
-                        RECT b = shapes.get(f).getBounds();
-                        int xmin = b.Xmin == Integer.MAX_VALUE ? 0 : (int) (b.Xmin / ft.getDivider());
-                        xmin *= textHeight / 1024.0;
-                        int ymin = b.Ymin == Integer.MAX_VALUE ? 0 : (int) (b.Ymin / ft.getDivider());
-                        ymin *= textHeight / 1024.0;
-                        int w = (int) (b.getWidth() / ft.getDivider());
-                        w *= textHeight / 1024.0;
-                        int h = (int) (b.getHeight() / ft.getDivider());
-                        h *= textHeight / 1024.0;
-
-                        tr.fontId = fontId;
-                        tr.styleFlagsHasFont = true;
-                        tr.textHeight = textHeight;
-                        tr.xOffset = -xmin;
-                        tr.yOffset = 0;
-                        tr.styleFlagsHasXOffset = true;
-                        tr.styleFlagsHasYOffset = true;
-                        tr.glyphEntries = new ArrayList<>(1);
-                        tr.styleFlagsHasColor = true;
-                        tr.textColor = new RGB(0, 0, 0);
-                        GLYPHENTRY ge = new GLYPHENTRY();
-
-                        double ga = ft.getGlyphAdvance(f);
-                        int cw = ga == -1 ? w : (int) (ga / ft.getDivider() * textHeight / 1024.0);
-
-                        ge.glyphAdvance = 0;
-                        ge.glyphIndex = f;
-                        tr.glyphEntries.add(ge);
-                        rec.add(tr);
-
-                        tmat.translateX = x * width / cols + width / cols / 2 - w / 2;
-                        tmat.translateY = y * height / rows + height / rows / 2;
-                        new DefineTextTag(swf, 999 + f, new RECT(0, cw, ymin, ymin + h), new MATRIX(), rec).writeTag(sos2);
-                        new PlaceObject2Tag(swf, false, 1 + f, 999 + f, tmat, null, 0, null, -1, null).writeTag(sos2);
-                        x++;
                     }
                     new ShowFrameTag(swf).writeTag(sos2);
                 } else if ((treeItem instanceof DefineMorphShapeTag) || (treeItem instanceof DefineMorphShape2Tag)) {

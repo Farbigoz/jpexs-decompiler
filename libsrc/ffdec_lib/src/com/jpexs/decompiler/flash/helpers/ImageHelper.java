@@ -12,7 +12,8 @@
  * Lesser General Public License for more details.
  * 
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library. */
+ * License along with this library.
+ */
 package com.jpexs.decompiler.flash.helpers;
 
 import com.jpexs.decompiler.flash.tags.enums.ImageFormat;
@@ -178,6 +179,8 @@ public class ImageHelper {
                 return "png";
             case BMP:
                 return "bmp";
+            case SWF:
+                return "swf";
         }
 
         throw new Error("Unsuported image format: " + format);

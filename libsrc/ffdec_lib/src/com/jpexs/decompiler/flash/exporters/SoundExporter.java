@@ -12,13 +12,15 @@
  * Lesser General Public License for more details.
  * 
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library. */
+ * License along with this library.
+ */
 package com.jpexs.decompiler.flash.exporters;
 
 import com.jpexs.decompiler.flash.AbortRetryIgnoreHandler;
 import com.jpexs.decompiler.flash.EventListener;
 import com.jpexs.decompiler.flash.ReadOnlyTagList;
 import com.jpexs.decompiler.flash.RetryTask;
+import com.jpexs.decompiler.flash.action.parser.ActionParseException;
 import com.jpexs.decompiler.flash.exporters.modes.SoundExportMode;
 import com.jpexs.decompiler.flash.exporters.settings.SoundExportSettings;
 import com.jpexs.decompiler.flash.flv.AUDIODATA;
@@ -43,6 +45,8 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -97,12 +101,26 @@ public class SoundExporter {
                     ext = "flv";
                 }
 
+                if (settings.mode == SoundExportMode.SWF) {
+                    ext = "swf";
+                }
+
                 final File file = new File(outdir + File.separator + Helper.makeFileName(st.getCharacterExportFileName()) + "." + ext);
-                new RetryTask(() -> {
-                    try (OutputStream os = new BufferedOutputStream(new FileOutputStream(file))) {
-                        exportSound(os, st, settings.mode);
+                
+                if (settings.mode == SoundExportMode.SWF) {
+                    OutputStream fos = new BufferedOutputStream(new FileOutputStream(file));
+                    try {
+                        new PreviewExporter().exportSwf(fos, st, null, 0, true);
+                    } catch (ActionParseException ex) {
+                        Logger.getLogger(SoundExporter.class.getName()).log(Level.SEVERE, null, ex);
                     }
-                }, handler).run();
+                } else {
+                    new RetryTask(() -> {
+                        try (OutputStream os = new BufferedOutputStream(new FileOutputStream(file))) {
+                            exportSound(os, st, settings.mode);
+                        }
+                    }, handler).run();
+                }
 
                 ret.add(file);
 

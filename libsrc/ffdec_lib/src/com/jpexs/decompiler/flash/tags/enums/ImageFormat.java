@@ -12,7 +12,8 @@
  * Lesser General Public License for more details.
  * 
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library. */
+ * License along with this library.
+ */
 package com.jpexs.decompiler.flash.tags.enums;
 
 /**
@@ -21,7 +22,7 @@ package com.jpexs.decompiler.flash.tags.enums;
  */
 public enum ImageFormat {
 
-    UNKNOWN(""), JPEG(".jpg"), GIF(".gif"), PNG(".png"), BMP(".bmp");
+    UNKNOWN(""), JPEG(".jpg"), GIF(".gif"), PNG(".png"), BMP(".bmp"), SWF(".swf");
 
     private final String extension;
 

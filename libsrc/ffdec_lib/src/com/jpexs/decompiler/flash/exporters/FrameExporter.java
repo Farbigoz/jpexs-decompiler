@@ -346,7 +346,7 @@ public class FrameExporter {
             Color fBackgroundColor = backgroundColor;
             if (exportAll) {
                 new RetryTask(() -> {
-                    File f = new File(foutdir + File.separator + "frames.swf");
+                    File f = new File(foutdir + ".swf");
 
                     try (OutputStream fos = new BufferedOutputStream(new FileOutputStream(f))) {
                         try {

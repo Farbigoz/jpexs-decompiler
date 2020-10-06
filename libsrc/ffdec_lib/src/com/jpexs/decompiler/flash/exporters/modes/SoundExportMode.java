@@ -12,7 +12,8 @@
  * Lesser General Public License for more details.
  * 
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library. */
+ * License along with this library.
+ */
 package com.jpexs.decompiler.flash.exporters.modes;
 
 /**
@@ -21,14 +22,15 @@ package com.jpexs.decompiler.flash.exporters.modes;
  */
 public enum SoundExportMode {
 
-    MP3_WAV_FLV(true, true, true), FLV(false, false, true), MP3_WAV(true, true, false), WAV(false, true, false);
+    MP3_WAV_FLV(true, true, true, false), FLV(false, false, true, false), MP3_WAV(true, true, false, false), WAV(false, true, false, false), SWF(false, false, false, true);
 
-    private final boolean mp3, wav, flv;
+    private final boolean mp3, wav, flv, swf;
 
-    private SoundExportMode(boolean mp3, boolean wav, boolean flv) {
+    private SoundExportMode(boolean mp3, boolean wav, boolean flv, boolean swf) {
         this.mp3 = mp3;
         this.wav = wav;
         this.flv = flv;
+        this.swf = swf;
     }
 
     public boolean hasMP3() {
@@ -41,5 +43,9 @@ public enum SoundExportMode {
 
     public boolean hasFlv() {
         return flv;
+    }
+    
+    public boolean hasSwf() {
+        return swf;
     }
 }
