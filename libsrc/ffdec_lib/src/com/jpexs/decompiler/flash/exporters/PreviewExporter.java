@@ -230,7 +230,7 @@ public class PreviewExporter {
                         jtt.writeTag(sos2);
                     }
                 } else if (treeItem instanceof AloneTag) {
-                } else {
+                } else if (!exportToFile) {
                     Set<Integer> needed = new HashSet<>();
                     ((Tag) treeItem).getNeededCharactersDeep(needed);
                     for (int n : needed) {

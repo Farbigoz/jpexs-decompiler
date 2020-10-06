@@ -114,9 +114,9 @@ public class TextExporter {
                     final File file = new File(outdir + File.separator + Helper.makeFileName(textTag.getCharacterExportFileName() + ".swf"));
                     OutputStream fos = new BufferedOutputStream(new FileOutputStream(file));
                     try {
-                        new PreviewExporter().exportSwf(fos, textTag, null, 0);
+                        new PreviewExporter().exportSwf(fos, textTag, null, 0, true);
                     } catch (ActionParseException ex) {
-                        Logger.getLogger(MorphShapeExporter.class.getName()).log(Level.SEVERE, null, ex);
+                        Logger.getLogger(TextExporter.class.getName()).log(Level.SEVERE, null, ex);
                     }
                     ret.add(file);
 

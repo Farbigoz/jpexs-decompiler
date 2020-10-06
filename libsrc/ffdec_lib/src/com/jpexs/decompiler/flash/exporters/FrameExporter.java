@@ -180,7 +180,6 @@ public class FrameExporter {
         }
 
         final File foutdir = new File(outdir + path);
-        Path.createDirectorySafe(foutdir);
 
         final List<Integer> fframes = frames;
 
@@ -191,6 +190,7 @@ public class FrameExporter {
         }
 
         if (settings.mode == FrameExportMode.SVG) {
+            Path.createDirectorySafe(foutdir);
             for (int i = 0; i < frames.size(); i++) {
                 if (evl != null) {
                     Tag parentTag = tim.getParentTag();
@@ -229,6 +229,7 @@ public class FrameExporter {
         }
 
         if (settings.mode == FrameExportMode.CANVAS) {
+            Path.createDirectorySafe(foutdir);
             if (evl != null) {
                 Tag parentTag = tim.getParentTag();
                 evl.handleExportingEvent("canvas", 1, 1, parentTag == null ? "" : parentTag.getName());
@@ -346,7 +347,7 @@ public class FrameExporter {
             Color fBackgroundColor = backgroundColor;
             if (exportAll) {
                 new RetryTask(() -> {
-                    File f = new File(foutdir + ".swf");
+                    File f = new File(outdir + File.separator + containerId + ".swf");
 
                     try (OutputStream fos = new BufferedOutputStream(new FileOutputStream(f))) {
                         try {
@@ -359,6 +360,7 @@ public class FrameExporter {
                     ret.add(f);
                 }, handler).run();
             } else {
+                Path.createDirectorySafe(foutdir);
                 for (Integer frame : fframes) {
                     new RetryTask(() -> {
                         File f = new File(foutdir + File.separator + (frame + 1) + ".swf");
