@@ -22,15 +22,15 @@ package com.jpexs.decompiler.flash.exporters.modes;
  */
 public enum SoundExportMode {
 
-    MP3_WAV_FLV(true, true, true, false), FLV(false, false, true, false), MP3_WAV(true, true, false, false), WAV(false, true, false, false), SWF(false, false, false, true);
+    MP3_WAV_FLV(true, true, true, false), FLV(false, false, true, false), MP3_WAV(true, true, false, false), WAV(false, true, false, false), BMLSWF(false, false, false, true);
 
-    private final boolean mp3, wav, flv, swf;
+    private final boolean mp3, wav, flv, bmlswf;
 
-    private SoundExportMode(boolean mp3, boolean wav, boolean flv, boolean swf) {
+    private SoundExportMode(boolean mp3, boolean wav, boolean flv, boolean bmlswf) {
         this.mp3 = mp3;
         this.wav = wav;
         this.flv = flv;
-        this.swf = swf;
+        this.bmlswf = bmlswf;
     }
 
     public boolean hasMP3() {
@@ -46,6 +46,6 @@ public enum SoundExportMode {
     }
     
     public boolean hasSwf() {
-        return swf;
+        return bmlswf;
     }
 }

@@ -179,8 +179,8 @@ public class ImageHelper {
                 return "png";
             case BMP:
                 return "bmp";
-            case SWF:
-                return "swf";
+            case BMLSWF:
+                return "bmlswf";
         }
 
         throw new Error("Unsuported image format: " + format);

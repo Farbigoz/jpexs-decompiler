@@ -22,7 +22,7 @@ package com.jpexs.decompiler.flash.tags.enums;
  */
 public enum ImageFormat {
 
-    UNKNOWN(""), JPEG(".jpg"), GIF(".gif"), PNG(".png"), BMP(".bmp"), SWF(".swf");
+    UNKNOWN(""), JPEG(".jpg"), GIF(".gif"), PNG(".png"), BMP(".bmp"), BMLSWF(".bmlswf");
 
     private final String extension;
 

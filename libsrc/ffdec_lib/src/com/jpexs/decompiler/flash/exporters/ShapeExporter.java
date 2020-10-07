@@ -154,6 +154,16 @@ public class ShapeExporter {
                             }
 
                             break;
+                        case BMLSWF:
+                            try (OutputStream fos = new BufferedOutputStream(new FileOutputStream(file))) {
+                                try {
+                                    new PreviewExporter().exportSwf(fos, st, null, 0, true);
+                                } catch (ActionParseException ex) {
+                                    Logger.getLogger(MorphShapeExporter.class.getName()).log(Level.SEVERE, null, ex);
+                                }
+                            }
+
+                            break;
                     }
                 }, handler).run();
                 ret.add(file);

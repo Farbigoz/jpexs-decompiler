@@ -90,7 +90,7 @@ public class PreviewExporter {
         return exportSwf(os, treeItem, backgroundColor, fontPageNum, false);
     }
 
-    public SWFHeader exportSwf(OutputStream os, TreeItem treeItem, Color backgroundColor, int fontPageNum, boolean exportToFile) throws IOException, ActionParseException {
+    public SWFHeader exportSwf(OutputStream os, TreeItem treeItem, Color backgroundColor, int fontPageNum, boolean exportToBMLSWF) throws IOException, ActionParseException {
         SWF swf = treeItem.getSwf();
 
         int frameCount = 1;
@@ -111,10 +111,6 @@ public class PreviewExporter {
         if ((treeItem instanceof DefineMorphShapeTag) || (treeItem instanceof DefineMorphShape2Tag)) {
             frameRate = MORPH_SHAPE_ANIMATION_FRAME_RATE;
             frameCount = (int) (MORPH_SHAPE_ANIMATION_LENGTH * frameRate);
-        }
-
-        if (treeItem instanceof DefineSoundTag) {
-            frameCount = 1;
         }
 
         if (treeItem instanceof DefineSpriteTag) {
@@ -156,7 +152,7 @@ public class PreviewExporter {
             sos2.writeUI16(frameCount); //framecnt
 
             FileAttributesTag fa = swf.getFileAttributes();
-            if (fa != null) {
+            if (fa != null && !exportToBMLSWF) {
                 fa.writeTag(sos2);
             }
 
@@ -165,7 +161,7 @@ public class PreviewExporter {
                 setBgColorTag = new SetBackgroundColorTag(swf, new RGB(backgroundColor));
             }
 
-            if (setBgColorTag != null) {
+            if (setBgColorTag != null && !exportToBMLSWF) {
                 setBgColorTag.writeTag(sos2);
             }
 
@@ -230,7 +226,7 @@ public class PreviewExporter {
                         jtt.writeTag(sos2);
                     }
                 } else if (treeItem instanceof AloneTag) {
-                } else if (!exportToFile) {
+                } else if (!exportToBMLSWF) {
                     Set<Integer> needed = new HashSet<>();
                     ((Tag) treeItem).getNeededCharactersDeep(needed);
                     for (int n : needed) {
@@ -251,280 +247,282 @@ public class PreviewExporter {
                 }
 
                 writeTag((Tag) treeItem, sos2);
-
-                MATRIX mat = new MATRIX();
-                mat.hasRotate = false;
-                mat.hasScale = false;
-                mat.translateX = 0;
-                mat.translateY = 0;
-                if (treeItem instanceof BoundedTag) {
-                    RECT r = ((BoundedTag) treeItem).getRect();
-                    mat.translateX = -r.Xmin;
-                    mat.translateY = -r.Ymin;
-                    mat.translateX = mat.translateX + width / 2 - r.getWidth() / 2;
-                    mat.translateY = mat.translateY + height / 2 - r.getHeight() / 2;
-                } else {
-                    mat.translateX = width / 4;
-                    mat.translateY = height / 4;
-                }
-                if (treeItem instanceof FontTag) {
-                    FontTag ft = (FontTag) classicTag((Tag) treeItem);
-
-                    int countGlyphsTotal = ft.getGlyphShapeTable().size();
-                    int countGlyphs = Math.min(SHAPERECORD.MAX_CHARACTERS_IN_FONT_PREVIEW, countGlyphsTotal);
-                    int fontId = ft.getFontId();
-                    int cols = (int) Math.ceil(Math.sqrt(countGlyphs));
-                    int rows = (int) Math.ceil(((float) countGlyphs) / ((float) cols));
-                    if (rows == 0) {
-                        rows = 1;
-                        cols = 1;
+                
+                if (!exportToBMLSWF) {
+                    MATRIX mat = new MATRIX();
+                    mat.hasRotate = false;
+                    mat.hasScale = false;
+                    mat.translateX = 0;
+                    mat.translateY = 0;
+                    if (treeItem instanceof BoundedTag) {
+                        RECT r = ((BoundedTag) treeItem).getRect();
+                        mat.translateX = -r.Xmin;
+                        mat.translateY = -r.Ymin;
+                        mat.translateX = mat.translateX + width / 2 - r.getWidth() / 2;
+                        mat.translateY = mat.translateY + height / 2 - r.getHeight() / 2;
+                    } else {
+                        mat.translateX = width / 4;
+                        mat.translateY = height / 4;
                     }
-                    int x = 0;
-                    int y = 0;
-                    int firstGlyphIndex = fontPageNum * SHAPERECORD.MAX_CHARACTERS_IN_FONT_PREVIEW;
-                    countGlyphs = Math.min(SHAPERECORD.MAX_CHARACTERS_IN_FONT_PREVIEW, countGlyphsTotal - firstGlyphIndex);
-                    List<SHAPE> shapes = ft.getGlyphShapeTable();
-                    int maxw = 0;
-                    for (int f = firstGlyphIndex; f < firstGlyphIndex + countGlyphs; f++) {
-                        RECT b = shapes.get(f).getBounds();
-                        if (b.Xmin == Integer.MAX_VALUE) {
-                            continue;
+                    if (treeItem instanceof FontTag) {
+                        FontTag ft = (FontTag) classicTag((Tag) treeItem);
+
+                        int countGlyphsTotal = ft.getGlyphShapeTable().size();
+                        int countGlyphs = Math.min(SHAPERECORD.MAX_CHARACTERS_IN_FONT_PREVIEW, countGlyphsTotal);
+                        int fontId = ft.getFontId();
+                        int cols = (int) Math.ceil(Math.sqrt(countGlyphs));
+                        int rows = (int) Math.ceil(((float) countGlyphs) / ((float) cols));
+                        if (rows == 0) {
+                            rows = 1;
+                            cols = 1;
                         }
-                        if (b.Ymin == Integer.MAX_VALUE) {
-                            continue;
-                        }
-                        int w = (int) (b.getWidth() / ft.getDivider());
-                        if (w > maxw) {
-                            maxw = w;
-                        }
-                        x++;
-                    }
-
-                    x = 0;
-
-                    int BORDER = 3 * 20;
-
-                    int textHeight = height / rows;
-
-                    while (maxw * textHeight / 1024.0 > width / cols - 2 * BORDER) {
-                        textHeight--;
-                    }
-
-                    if (!exportToFile) {
-                        MATRIX tmat = new MATRIX();
+                        int x = 0;
+                        int y = 0;
+                        int firstGlyphIndex = fontPageNum * SHAPERECORD.MAX_CHARACTERS_IN_FONT_PREVIEW;
+                        countGlyphs = Math.min(SHAPERECORD.MAX_CHARACTERS_IN_FONT_PREVIEW, countGlyphsTotal - firstGlyphIndex);
+                        List<SHAPE> shapes = ft.getGlyphShapeTable();
+                        int maxw = 0;
                         for (int f = firstGlyphIndex; f < firstGlyphIndex + countGlyphs; f++) {
-                            if (x >= cols) {
-                                x = 0;
-                                y++;
-                            }
-                            List<TEXTRECORD> rec = new ArrayList<>();
-                            TEXTRECORD tr = new TEXTRECORD();
-
                             RECT b = shapes.get(f).getBounds();
-                            int xmin = b.Xmin == Integer.MAX_VALUE ? 0 : (int) (b.Xmin / ft.getDivider());
-                            xmin *= textHeight / 1024.0;
-                            int ymin = b.Ymin == Integer.MAX_VALUE ? 0 : (int) (b.Ymin / ft.getDivider());
-                            ymin *= textHeight / 1024.0;
+                            if (b.Xmin == Integer.MAX_VALUE) {
+                                continue;
+                            }
+                            if (b.Ymin == Integer.MAX_VALUE) {
+                                continue;
+                            }
                             int w = (int) (b.getWidth() / ft.getDivider());
-                            w *= textHeight / 1024.0;
-                            int h = (int) (b.getHeight() / ft.getDivider());
-                            h *= textHeight / 1024.0;
-
-                            tr.fontId = fontId;
-                            tr.styleFlagsHasFont = true;
-                            tr.textHeight = textHeight;
-                            tr.xOffset = -xmin;
-                            tr.yOffset = 0;
-                            tr.styleFlagsHasXOffset = true;
-                            tr.styleFlagsHasYOffset = true;
-                            tr.glyphEntries = new ArrayList<>(1);
-                            tr.styleFlagsHasColor = true;
-                            tr.textColor = new RGB(0, 0, 0);
-                            GLYPHENTRY ge = new GLYPHENTRY();
-
-                            double ga = ft.getGlyphAdvance(f);
-                            int cw = ga == -1 ? w : (int) (ga / ft.getDivider() * textHeight / 1024.0);
-
-                            ge.glyphAdvance = 0;
-                            ge.glyphIndex = f;
-                            tr.glyphEntries.add(ge);
-                            rec.add(tr);
-
-                            tmat.translateX = x * width / cols + width / cols / 2 - w / 2;
-                            tmat.translateY = y * height / rows + height / rows / 2;
-                            new DefineTextTag(swf, 999 + f, new RECT(0, cw, ymin, ymin + h), new MATRIX(), rec).writeTag(sos2);
-                            new PlaceObject2Tag(swf, false, 1 + f, 999 + f, tmat, null, 0, null, -1, null).writeTag(sos2);
+                            if (w > maxw) {
+                                maxw = w;
+                            }
                             x++;
                         }
-                    }
-                    new ShowFrameTag(swf).writeTag(sos2);
-                } else if ((treeItem instanceof DefineMorphShapeTag) || (treeItem instanceof DefineMorphShape2Tag)) {
-                    new PlaceObject2Tag(swf, false, 1, chtId, mat, null, 0, null, -1, null).writeTag(sos2);
-                    new ShowFrameTag(swf).writeTag(sos2);
-                    for (int ratio = 0; ratio < 65536; ratio += 65536 / frameCount) {
-                        new PlaceObject2Tag(swf, true, 1, chtId, mat, null, ratio, null, -1, null).writeTag(sos2);
-                        new ShowFrameTag(swf).writeTag(sos2);
-                    }
-                } else if (treeItem instanceof SoundStreamHeadTypeTag) {
-                    for (SoundStreamBlockTag blk : soundFrames) {
-                        blk.writeTag(sos2);
-                        new ShowFrameTag(swf).writeTag(sos2);
-                    }
-                } else if (treeItem instanceof DefineSoundTag) {
-                    ExportAssetsTag ea = new ExportAssetsTag(swf);
-                    DefineSoundTag ds = (DefineSoundTag) treeItem;
-                    ea.tags.add(ds.soundId);
-                    ea.names.add("my_define_sound");
-                    ea.writeTag(sos2);
-                    List<Action> actions;
-                    DoActionTag doa;
 
-                    doa = new DoActionTag(swf, null);
-                    actions = ASMParser.parse(0, false,
-                            "ConstantPool \"_root\" \"my_sound\" \"Sound\" \"my_define_sound\" \"attachSound\"\n"
-                            + "Push \"_root\"\n"
-                            + "GetVariable\n"
-                            + "Push \"my_sound\" 0.0 \"Sound\"\n"
-                            + "NewObject\n"
-                            + "SetMember\n"
-                            + "Push \"my_define_sound\" 1 \"_root\"\n"
-                            + "GetVariable\n"
-                            + "Push \"my_sound\"\n"
-                            + "GetMember\n"
-                            + "Push \"attachSound\"\n"
-                            + "CallMethod\n"
-                            + "Pop\n"
-                            + "Stop", swf.version, false);
-                    doa.setActions(actions);
-                    doa.writeTag(sos2);
-                    new ShowFrameTag(swf).writeTag(sos2);
+                        x = 0;
 
-                    actions = ASMParser.parse(0, false,
-                            "ConstantPool \"_root\" \"my_sound\" \"Sound\" \"my_define_sound\" \"attachSound\" \"start\"\n"
-                            + "StopSounds\n"
-                            + "Push \"_root\"\n"
-                            + "GetVariable\n"
-                            + "Push \"my_sound\" 0.0 \"Sound\"\n"
-                            + "NewObject\n"
-                            + "SetMember\n"
-                            + "Push \"my_define_sound\" 1 \"_root\"\n"
-                            + "GetVariable\n"
-                            + "Push \"my_sound\"\n"
-                            + "GetMember\n"
-                            + "Push \"attachSound\"\n"
-                            + "CallMethod\n"
-                            + "Pop\n"
-                            + "Push 9999 0.0 2 \"_root\"\n"
-                            + "GetVariable\n"
-                            + "Push \"my_sound\"\n"
-                            + "GetMember\n"
-                            + "Push \"start\"\n"
-                            + "CallMethod\n"
-                            + "Pop\n"
-                            + "Stop", swf.version, false);
-                    doa.setActions(actions);
-                    doa.writeTag(sos2);
-                    new ShowFrameTag(swf).writeTag(sos2);
+                        int BORDER = 3 * 20;
 
-                    actions = ASMParser.parse(0, false,
-                            "ConstantPool \"_root\" \"my_sound\" \"Sound\" \"my_define_sound\" \"attachSound\" \"onSoundComplete\" \"start\" \"execParam\"\n"
-                            + "StopSounds\n"
-                            + "Push \"_root\"\n"
-                            + "GetVariable\n"
-                            + "Push \"my_sound\" 0.0 \"Sound\"\n"
-                            + "NewObject\n"
-                            + "SetMember\n"
-                            + "Push \"my_define_sound\" 1 \"_root\"\n"
-                            + "GetVariable\n"
-                            + "Push \"my_sound\"\n"
-                            + "GetMember\n"
-                            + "Push \"attachSound\"\n"
-                            + "CallMethod\n"
-                            + "Pop\n"
-                            + "Push \"_root\"\n"
-                            + "GetVariable\n"
-                            + "Push \"my_sound\"\n"
-                            + "GetMember\n"
-                            + "Push \"onSoundComplete\"\n"
-                            + "DefineFunction2 \"\" 0 2 false true true false true false true false false  {\n"
-                            + "Push 0.0 register1 \"my_sound\"\n"
-                            + "GetMember\n"
-                            + "Push \"start\"\n"
-                            + "CallMethod\n"
-                            + "Pop\n"
-                            + "}\n"
-                            + "SetMember\n"
-                            + "Push \"_root\"\n"
-                            + "GetVariable\n"
-                            + "Push \"execParam\"\n"
-                            + "GetMember\n"
-                            + "Push 1 \"_root\"\n"
-                            + "GetVariable\n"
-                            + "Push \"my_sound\"\n"
-                            + "GetMember\n"
-                            + "Push \"start\"\n"
-                            + "CallMethod\n"
-                            + "Pop\n"
-                            + "Stop", swf.version, false);
-                    doa.setActions(actions);
-                    doa.writeTag(sos2);
-                    new ShowFrameTag(swf).writeTag(sos2);
+                        int textHeight = height / rows;
 
-                    actions = ASMParser.parse(0, false,
-                            "StopSounds\n"
-                            + "Stop", swf.version, false);
-                    doa.setActions(actions);
-                    doa.writeTag(sos2);
-                    new ShowFrameTag(swf).writeTag(sos2);
-
-                    new ShowFrameTag(swf).writeTag(sos2);
-                } else if (treeItem instanceof DefineVideoStreamTag) {
-
-                    new PlaceObject2Tag(swf, false, 1, chtId, mat, null, -1, null, -1, null).writeTag(sos2);
-                    List<VideoFrameTag> frs = new ArrayList<>(videoFrames.values());
-                    Collections.sort(frs, new Comparator<VideoFrameTag>() {
-                        @Override
-                        public int compare(VideoFrameTag o1, VideoFrameTag o2) {
-                            return o1.frameNum - o2.frameNum;
+                        while (maxw * textHeight / 1024.0 > width / cols - 2 * BORDER) {
+                            textHeight--;
                         }
-                    });
-                    boolean first = true;
-                    int ratio = 0;
-                    for (VideoFrameTag f : frs) {
-                        if (!first) {
-                            ratio++;
-                            new PlaceObject2Tag(swf, true, 1, -1, null, null, ratio, null, -1, null).writeTag(sos2);
+
+                        if (!exportToBMLSWF) {
+                            MATRIX tmat = new MATRIX();
+                            for (int f = firstGlyphIndex; f < firstGlyphIndex + countGlyphs; f++) {
+                                if (x >= cols) {
+                                    x = 0;
+                                    y++;
+                                }
+                                List<TEXTRECORD> rec = new ArrayList<>();
+                                TEXTRECORD tr = new TEXTRECORD();
+
+                                RECT b = shapes.get(f).getBounds();
+                                int xmin = b.Xmin == Integer.MAX_VALUE ? 0 : (int) (b.Xmin / ft.getDivider());
+                                xmin *= textHeight / 1024.0;
+                                int ymin = b.Ymin == Integer.MAX_VALUE ? 0 : (int) (b.Ymin / ft.getDivider());
+                                ymin *= textHeight / 1024.0;
+                                int w = (int) (b.getWidth() / ft.getDivider());
+                                w *= textHeight / 1024.0;
+                                int h = (int) (b.getHeight() / ft.getDivider());
+                                h *= textHeight / 1024.0;
+
+                                tr.fontId = fontId;
+                                tr.styleFlagsHasFont = true;
+                                tr.textHeight = textHeight;
+                                tr.xOffset = -xmin;
+                                tr.yOffset = 0;
+                                tr.styleFlagsHasXOffset = true;
+                                tr.styleFlagsHasYOffset = true;
+                                tr.glyphEntries = new ArrayList<>(1);
+                                tr.styleFlagsHasColor = true;
+                                tr.textColor = new RGB(0, 0, 0);
+                                GLYPHENTRY ge = new GLYPHENTRY();
+
+                                double ga = ft.getGlyphAdvance(f);
+                                int cw = ga == -1 ? w : (int) (ga / ft.getDivider() * textHeight / 1024.0);
+
+                                ge.glyphAdvance = 0;
+                                ge.glyphIndex = f;
+                                tr.glyphEntries.add(ge);
+                                rec.add(tr);
+
+                                tmat.translateX = x * width / cols + width / cols / 2 - w / 2;
+                                tmat.translateY = y * height / rows + height / rows / 2;
+                                new DefineTextTag(swf, 999 + f, new RECT(0, cw, ymin, ymin + h), new MATRIX(), rec).writeTag(sos2);
+                                new PlaceObject2Tag(swf, false, 1 + f, 999 + f, tmat, null, 0, null, -1, null).writeTag(sos2);
+                                x++;
+                            }
                         }
-                        f.writeTag(sos2);
                         new ShowFrameTag(swf).writeTag(sos2);
-                        first = false;
-                    }
-                } else if (treeItem instanceof DefineSpriteTag) {
-                    DefineSpriteTag s = (DefineSpriteTag) treeItem;
-                    Tag lastTag = null;
-                    for (Tag t : s.getTags()) {
-                        if (t instanceof EndTag) {
-                            break;
-                        } else if (t instanceof PlaceObjectTypeTag) {
-                            PlaceObjectTypeTag pt = (PlaceObjectTypeTag) t;
-                            MATRIX m = pt.getMatrix();
-                            MATRIX m2 = new Matrix(m).preConcatenate(new Matrix(mat)).toMATRIX();
-                            pt.writeTagWithMatrix(sos2, m2);
-                            lastTag = t;
-                        } else {
-                            t.writeTag(sos2);
-                            lastTag = t;
+                    } else if ((treeItem instanceof DefineMorphShapeTag) || (treeItem instanceof DefineMorphShape2Tag)) {
+                        new PlaceObject2Tag(swf, false, 1, chtId, mat, null, 0, null, -1, null).writeTag(sos2);
+                        new ShowFrameTag(swf).writeTag(sos2);
+                        for (int ratio = 0; ratio < 65536; ratio += 65536 / frameCount) {
+                            new PlaceObject2Tag(swf, true, 1, chtId, mat, null, ratio, null, -1, null).writeTag(sos2);
+                            new ShowFrameTag(swf).writeTag(sos2);
                         }
-                    }
-                    if (!s.getTags().isEmpty() && (lastTag != null) && (!(lastTag instanceof ShowFrameTag))) {
+                    } else if (treeItem instanceof SoundStreamHeadTypeTag) {
+                        for (SoundStreamBlockTag blk : soundFrames) {
+                            blk.writeTag(sos2);
+                            new ShowFrameTag(swf).writeTag(sos2);
+                        }
+                    } else if (treeItem instanceof DefineSoundTag) {
+                        ExportAssetsTag ea = new ExportAssetsTag(swf);
+                        DefineSoundTag ds = (DefineSoundTag) treeItem;
+                        ea.tags.add(ds.soundId);
+                        ea.names.add("my_define_sound");
+                        ea.writeTag(sos2);
+                        List<Action> actions;
+                        DoActionTag doa;
+
+                        doa = new DoActionTag(swf, null);
+                        actions = ASMParser.parse(0, false,
+                                "ConstantPool \"_root\" \"my_sound\" \"Sound\" \"my_define_sound\" \"attachSound\"\n"
+                                + "Push \"_root\"\n"
+                                + "GetVariable\n"
+                                + "Push \"my_sound\" 0.0 \"Sound\"\n"
+                                + "NewObject\n"
+                                + "SetMember\n"
+                                + "Push \"my_define_sound\" 1 \"_root\"\n"
+                                + "GetVariable\n"
+                                + "Push \"my_sound\"\n"
+                                + "GetMember\n"
+                                + "Push \"attachSound\"\n"
+                                + "CallMethod\n"
+                                + "Pop\n"
+                                + "Stop", swf.version, false);
+                        doa.setActions(actions);
+                        doa.writeTag(sos2);
+                        new ShowFrameTag(swf).writeTag(sos2);
+
+                        actions = ASMParser.parse(0, false,
+                                "ConstantPool \"_root\" \"my_sound\" \"Sound\" \"my_define_sound\" \"attachSound\" \"start\"\n"
+                                + "StopSounds\n"
+                                + "Push \"_root\"\n"
+                                + "GetVariable\n"
+                                + "Push \"my_sound\" 0.0 \"Sound\"\n"
+                                + "NewObject\n"
+                                + "SetMember\n"
+                                + "Push \"my_define_sound\" 1 \"_root\"\n"
+                                + "GetVariable\n"
+                                + "Push \"my_sound\"\n"
+                                + "GetMember\n"
+                                + "Push \"attachSound\"\n"
+                                + "CallMethod\n"
+                                + "Pop\n"
+                                + "Push 9999 0.0 2 \"_root\"\n"
+                                + "GetVariable\n"
+                                + "Push \"my_sound\"\n"
+                                + "GetMember\n"
+                                + "Push \"start\"\n"
+                                + "CallMethod\n"
+                                + "Pop\n"
+                                + "Stop", swf.version, false);
+                        doa.setActions(actions);
+                        doa.writeTag(sos2);
+                        new ShowFrameTag(swf).writeTag(sos2);
+
+                        actions = ASMParser.parse(0, false,
+                                "ConstantPool \"_root\" \"my_sound\" \"Sound\" \"my_define_sound\" \"attachSound\" \"onSoundComplete\" \"start\" \"execParam\"\n"
+                                + "StopSounds\n"
+                                + "Push \"_root\"\n"
+                                + "GetVariable\n"
+                                + "Push \"my_sound\" 0.0 \"Sound\"\n"
+                                + "NewObject\n"
+                                + "SetMember\n"
+                                + "Push \"my_define_sound\" 1 \"_root\"\n"
+                                + "GetVariable\n"
+                                + "Push \"my_sound\"\n"
+                                + "GetMember\n"
+                                + "Push \"attachSound\"\n"
+                                + "CallMethod\n"
+                                + "Pop\n"
+                                + "Push \"_root\"\n"
+                                + "GetVariable\n"
+                                + "Push \"my_sound\"\n"
+                                + "GetMember\n"
+                                + "Push \"onSoundComplete\"\n"
+                                + "DefineFunction2 \"\" 0 2 false true true false true false true false false  {\n"
+                                + "Push 0.0 register1 \"my_sound\"\n"
+                                + "GetMember\n"
+                                + "Push \"start\"\n"
+                                + "CallMethod\n"
+                                + "Pop\n"
+                                + "}\n"
+                                + "SetMember\n"
+                                + "Push \"_root\"\n"
+                                + "GetVariable\n"
+                                + "Push \"execParam\"\n"
+                                + "GetMember\n"
+                                + "Push 1 \"_root\"\n"
+                                + "GetVariable\n"
+                                + "Push \"my_sound\"\n"
+                                + "GetMember\n"
+                                + "Push \"start\"\n"
+                                + "CallMethod\n"
+                                + "Pop\n"
+                                + "Stop", swf.version, false);
+                        doa.setActions(actions);
+                        doa.writeTag(sos2);
+                        new ShowFrameTag(swf).writeTag(sos2);
+
+                        actions = ASMParser.parse(0, false,
+                                "StopSounds\n"
+                                + "Stop", swf.version, false);
+                        doa.setActions(actions);
+                        doa.writeTag(sos2);
+                        new ShowFrameTag(swf).writeTag(sos2);
+
+                        new ShowFrameTag(swf).writeTag(sos2);
+                    } else if (treeItem instanceof DefineVideoStreamTag) {
+
+                        new PlaceObject2Tag(swf, false, 1, chtId, mat, null, -1, null, -1, null).writeTag(sos2);
+                        List<VideoFrameTag> frs = new ArrayList<>(videoFrames.values());
+                        Collections.sort(frs, new Comparator<VideoFrameTag>() {
+                            @Override
+                            public int compare(VideoFrameTag o1, VideoFrameTag o2) {
+                                return o1.frameNum - o2.frameNum;
+                            }
+                        });
+                        boolean first = true;
+                        int ratio = 0;
+                        for (VideoFrameTag f : frs) {
+                            if (!first) {
+                                ratio++;
+                                new PlaceObject2Tag(swf, true, 1, -1, null, null, ratio, null, -1, null).writeTag(sos2);
+                            }
+                            f.writeTag(sos2);
+                            new ShowFrameTag(swf).writeTag(sos2);
+                            first = false;
+                        }
+                    } else if (treeItem instanceof DefineSpriteTag) {
+                        DefineSpriteTag s = (DefineSpriteTag) treeItem;
+                        Tag lastTag = null;
+                        for (Tag t : s.getTags()) {
+                            if (t instanceof EndTag) {
+                                break;
+                            } else if (t instanceof PlaceObjectTypeTag) {
+                                PlaceObjectTypeTag pt = (PlaceObjectTypeTag) t;
+                                MATRIX m = pt.getMatrix();
+                                MATRIX m2 = new Matrix(m).preConcatenate(new Matrix(mat)).toMATRIX();
+                                pt.writeTagWithMatrix(sos2, m2);
+                                lastTag = t;
+                            } else {
+                                t.writeTag(sos2);
+                                lastTag = t;
+                            }
+                        }
+                        if (!s.getTags().isEmpty() && (lastTag != null) && (!(lastTag instanceof ShowFrameTag))) {
+                            new ShowFrameTag(swf).writeTag(sos2);
+                        }
+                    } else {
+                        new PlaceObject2Tag(swf, false, 1, chtId, mat, null, 0, null, -1, null).writeTag(sos2);
                         new ShowFrameTag(swf).writeTag(sos2);
                     }
-                } else {
-                    new PlaceObject2Tag(swf, false, 1, chtId, mat, null, 0, null, -1, null).writeTag(sos2);
-                    new ShowFrameTag(swf).writeTag(sos2);
                 }
 
-            } // not showframe
+            }
 
             new EndTag(swf).writeTag(sos2);
             data = baos.toByteArray();
@@ -545,14 +543,14 @@ public class PreviewExporter {
         return result;
     }
 
-    private static Tag classicTag(Tag t) {
+    public static Tag classicTag(Tag t) {
         if (t instanceof DefineCompactedFont) {
             return ((DefineCompactedFont) t).toClassicFont();
         }
         return t;
     }
 
-    private static void writeTag(Tag t, SWFOutputStream sos) throws IOException {
+    public static void writeTag(Tag t, SWFOutputStream sos) throws IOException {
         t = classicTag(t);
 
         t.writeTag(sos);

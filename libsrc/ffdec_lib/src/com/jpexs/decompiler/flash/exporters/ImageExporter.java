@@ -87,13 +87,13 @@ public class ImageExporter {
                 if (settings.mode == ImageExportMode.BMP) {
                     fileFormat = ImageFormat.BMP;
                 }
-                if (settings.mode == ImageExportMode.SWF) {
-                    fileFormat = ImageFormat.SWF;
+                if (settings.mode == ImageExportMode.BMLSWF) {
+                    fileFormat = ImageFormat.BMLSWF;
                 }
                 
                 File file = new File(outdir + File.separator + Helper.makeFileName(imageTag.getCharacterExportFileName() + "." + ImageHelper.getImageFormatString(fileFormat)));
                 
-                if (settings.mode == ImageExportMode.SWF) {
+                if (settings.mode == ImageExportMode.BMLSWF) {
                     OutputStream fos = new BufferedOutputStream(new FileOutputStream(file));
                     try {
                         new PreviewExporter().exportSwf(fos, imageTag, null, 0, true);

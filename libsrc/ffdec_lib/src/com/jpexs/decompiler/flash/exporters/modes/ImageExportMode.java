@@ -22,5 +22,5 @@ package com.jpexs.decompiler.flash.exporters.modes;
  */
 public enum ImageExportMode {
 
-    PNG_GIF_JPEG, PNG, JPEG, BMP, SWF
+    PNG_GIF_JPEG, PNG, JPEG, BMP, BMLSWF
 }

@@ -107,6 +107,9 @@ public class FrameExporter {
             case SWF:
                 fem = FrameExportMode.SWF;
                 break;
+            case BMLSWF:
+                fem = FrameExportMode.BMLSWF;
+                break;
             default:
                 throw new Error("Unsupported button export mode: " + settings.mode);
         }
@@ -147,6 +150,9 @@ public class FrameExporter {
             case SWF:
                 fem = FrameExportMode.SWF;
                 break;
+            case BMLSWF:
+                fem = FrameExportMode.BMLSWF;
+                break;
             default:
                 throw new Error("Unsupported sprite export mode");
         }
@@ -180,6 +186,9 @@ public class FrameExporter {
         }
 
         final File foutdir = new File(outdir + path);
+        if (settings.mode != FrameExportMode.BMLSWF) {
+            Path.createDirectorySafe(foutdir);
+        }
 
         final List<Integer> fframes = frames;
 
@@ -190,7 +199,6 @@ public class FrameExporter {
         }
 
         if (settings.mode == FrameExportMode.SVG) {
-            Path.createDirectorySafe(foutdir);
             for (int i = 0; i < frames.size(); i++) {
                 if (evl != null) {
                     Tag parentTag = tim.getParentTag();
@@ -229,7 +237,6 @@ public class FrameExporter {
         }
 
         if (settings.mode == FrameExportMode.CANVAS) {
-            Path.createDirectorySafe(foutdir);
             if (evl != null) {
                 Tag parentTag = tim.getParentTag();
                 evl.handleExportingEvent("canvas", 1, 1, parentTag == null ? "" : parentTag.getName());
@@ -342,12 +349,12 @@ public class FrameExporter {
             }
             return ret;
         }
-
+        
         if (settings.mode == FrameExportMode.SWF) {
             Color fBackgroundColor = backgroundColor;
             if (exportAll) {
                 new RetryTask(() -> {
-                    File f = new File(outdir + File.separator + containerId + ".swf");
+                    File f = new File(foutdir + File.separator + "frames.swf");
 
                     try (OutputStream fos = new BufferedOutputStream(new FileOutputStream(f))) {
                         try {
@@ -360,7 +367,6 @@ public class FrameExporter {
                     ret.add(f);
                 }, handler).run();
             } else {
-                Path.createDirectorySafe(foutdir);
                 for (Integer frame : fframes) {
                     new RetryTask(() -> {
                         File f = new File(foutdir + File.separator + (frame + 1) + ".swf");
@@ -378,6 +384,24 @@ public class FrameExporter {
                     }, handler).run();
                 }
             }
+        }
+
+        if (settings.mode == FrameExportMode.BMLSWF) {
+            Color fBackgroundColor = backgroundColor;
+            Path.createDirectorySafe(new File(outdir));
+            new RetryTask(() -> {
+                File f = new File(outdir + File.separator + containerId + ".bmlswf");
+
+                try (OutputStream fos = new BufferedOutputStream(new FileOutputStream(f))) {
+                    try {
+                        new PreviewExporter().exportSwf(fos, swf.getCharacter(containerId), fBackgroundColor, 0, true);
+                    } catch (ActionParseException ex) {
+                        Logger.getLogger(MorphShapeExporter.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+
+                ret.add(f);
+            }, handler).run();
         }
 
         final Color fbackgroundColor = backgroundColor;

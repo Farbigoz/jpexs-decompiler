@@ -103,7 +103,7 @@ public class TextExporter {
             return ret;
         }
         
-        if (settings.mode == TextExportMode.SWF) {
+        if (settings.mode == TextExportMode.BMLSWF) {
             for (Tag t : tags) {
                 if (t instanceof TextTag) {
                     if (evl != null) {
@@ -111,7 +111,7 @@ public class TextExporter {
                     }
 
                     final TextTag textTag = (TextTag) t;
-                    final File file = new File(outdir + File.separator + Helper.makeFileName(textTag.getCharacterExportFileName() + ".swf"));
+                    final File file = new File(outdir + File.separator + Helper.makeFileName(textTag.getCharacterExportFileName() + ".bmlswf"));
                     OutputStream fos = new BufferedOutputStream(new FileOutputStream(file));
                     try {
                         new PreviewExporter().exportSwf(fos, textTag, null, 0, true);

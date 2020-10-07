@@ -25,5 +25,5 @@ public enum TextExportMode {
     PLAIN,
     FORMATTED,
     SVG,
-    SWF
+    BMLSWF
 }

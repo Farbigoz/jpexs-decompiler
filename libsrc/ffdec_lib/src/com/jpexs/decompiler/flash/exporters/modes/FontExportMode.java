@@ -24,5 +24,5 @@ public enum FontExportMode {
 
     TTF,
     WOFF,
-    SWF
+    BMLSWF
 }

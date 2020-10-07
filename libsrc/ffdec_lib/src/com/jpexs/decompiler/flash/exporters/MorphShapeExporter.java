@@ -12,7 +12,8 @@
  * Lesser General Public License for more details.
  * 
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library. */
+ * License along with this library.
+ */
 package com.jpexs.decompiler.flash.exporters;
 
 import com.jpexs.decompiler.flash.AbortRetryIgnoreHandler;
@@ -121,6 +122,16 @@ public class MorphShapeExporter {
                             try (OutputStream fos = new BufferedOutputStream(new FileOutputStream(file))) {
                                 try {
                                     new PreviewExporter().exportSwf(fos, mst, null, 0);
+                                } catch (ActionParseException ex) {
+                                    Logger.getLogger(MorphShapeExporter.class.getName()).log(Level.SEVERE, null, ex);
+                                }
+                            }
+
+                            break;
+                        case BMLSWF:
+                            try (OutputStream fos = new BufferedOutputStream(new FileOutputStream(file))) {
+                                try {
+                                    new PreviewExporter().exportSwf(fos, mst, null, 0, true);
                                 } catch (ActionParseException ex) {
                                     Logger.getLogger(MorphShapeExporter.class.getName()).log(Level.SEVERE, null, ex);
                                 }

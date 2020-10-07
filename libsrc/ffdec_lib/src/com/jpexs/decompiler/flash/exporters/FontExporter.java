@@ -90,13 +90,13 @@ public class FontExporter {
                 if (settings.mode == FontExportMode.WOFF) {
                     ext = ".woff";
                 }
-                if (settings.mode == FontExportMode.SWF) {
-                    ext = ".swf";
+                if (settings.mode == FontExportMode.BMLSWF) {
+                    ext = ".bmlswf";
                 }
                 
-                final File file = new File(outdir + File.separator + Helper.makeFileName(st.getCharacterExportFileName() + ext));
-                
-                if (settings.mode == FontExportMode.SWF) {
+                File file;
+                if (settings.mode == FontExportMode.BMLSWF) {
+                    file = new File(outdir + File.separator + st.getCharacterId() + ext);
                     OutputStream fos = new BufferedOutputStream(new FileOutputStream(file));
                     try {
                         new PreviewExporter().exportSwf(fos, st, null, 0, true);
@@ -104,6 +104,7 @@ public class FontExporter {
                         Logger.getLogger(FontExporter.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 } else {
+                    file = new File(outdir + File.separator + Helper.makeFileName(st.getCharacterExportFileName() + ext));
                     new RetryTask(() -> {
                         exportFont(st, settings.mode, file);
                     }, handler).run();

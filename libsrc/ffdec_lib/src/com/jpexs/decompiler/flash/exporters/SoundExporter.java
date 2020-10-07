@@ -101,13 +101,14 @@ public class SoundExporter {
                     ext = "flv";
                 }
 
-                if (settings.mode == SoundExportMode.SWF) {
-                    ext = "swf";
+                if (settings.mode == SoundExportMode.BMLSWF) {
+                    ext = "bmlswf";
                 }
 
-                final File file = new File(outdir + File.separator + Helper.makeFileName(st.getCharacterExportFileName()) + "." + ext);
+                File file;
                 
-                if (settings.mode == SoundExportMode.SWF) {
+                if (settings.mode == SoundExportMode.BMLSWF) {
+                    file = new File(outdir + File.separator + Helper.makeFileName(st.getCharacterExportFileName()).split("_")[0] + "." + ext);
                     OutputStream fos = new BufferedOutputStream(new FileOutputStream(file));
                     try {
                         new PreviewExporter().exportSwf(fos, st, null, 0, true);
@@ -115,6 +116,7 @@ public class SoundExporter {
                         Logger.getLogger(SoundExporter.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 } else {
+                    file = new File(outdir + File.separator + Helper.makeFileName(st.getCharacterExportFileName()) + "." + ext);
                     new RetryTask(() -> {
                         try (OutputStream os = new BufferedOutputStream(new FileOutputStream(file))) {
                             exportSound(os, st, settings.mode);
